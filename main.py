@@ -1,111 +1,7 @@
 import sys
 import pygame
-import copy
-
-class Sudoku:
-    def __init__(self, board):
-        self.board = copy.deepcopy(board)
-    def isValidSudoku(self, givenRow, givenColumn, number):
-        aux = self.board[givenRow][givenColumn]
-        self.board[givenRow][givenColumn] = number
-        for row in range(9):
-            for column in range(9):
-                if self.board[row][column] != 0:
-                    # check if the element is unique on the column
-                    for r in range(row + 1, 9):
-                        if self.board[row][column] == self.board[r][column]:
-                            self.board[givenRow][givenColumn] = aux
-                            return False
-                    # check if the element is unique on the row
-                    for c in range(column + 1, 9):
-                        if self.board[row][column] == self.board[row][c]:
-                            self.board[givenRow][givenColumn] = aux
-                            return False
-                    # check if the element is unique in its 3*3 square
-                    # check secondary diagonal
-                    if self.board[row][column] == self.board[(row + 1) % 3 + 3 * (row // 3)][
-                        (column + 1) % 3 + 3 * (column // 3)]:
-                        self.board[givenRow][givenColumn] = aux
-                        return False
-                    if self.board[row][column] == self.board[(row + 2) % 3 + 3 * (row // 3)][
-                        (column + 2) % 3 + 3 * (column // 3)]:
-                        self.board[givenRow][givenColumn] = aux
-                        return False
-
-                    # main diagonal
-                    if self.board[row][column] == self.board[(row + 2) % 3 + 3 * (row // 3)][
-                        (column + 1) % 3 + 3 * (column // 3)]:
-                        self.board[givenRow][givenColumn] = aux
-                        return False
-                    if self.board[row][column] == self.board[(row + 1) % 3 + 3 * (row // 3)][
-                        (column + 2) % 3 + 3 * (column // 3)]:
-                        self.board[givenRow][givenColumn] = aux
-                        return False
-        self.board[givenRow][givenColumn] = aux
-        return True
-
-    def solveSudoku(self, row, column):
-        # if the value of the column is 9 we should go to the next row and first column
-        if column == 9:
-            if row == 8:  # if we are at the last row and complete it all it means we finished the game
-                return True
-            row += 1
-            column = 0
-
-        # if the cell is not empty move to the next cell
-        if self.board[row][column] > 0:
-            return self.solveSudoku(row, column + 1)
-
-        for value in range(1, 10):
-            if self.isValidSudoku(row, column, value):
-                self.board[row][column] = value
-                # check for next cell
-                if self.solveSudoku(row, column + 1):
-                    return True
-                # if it reaches here it means that the value was wrong, back to empty cell
-                self.board[row][column] = 0
-        return False
-    def solvedSudoku(self):
-        self.solveSudoku(0,0)
-        return self.board
-
-class Board:
-    def __init__(self, board):
-        self.board_width = 9
-        self.board_height = 9
-        self.cell_size = 50
-        self.board = board
-
-        self.cells = []
-        for i in range(self.board_height):
-            aux = []
-            for j in range(self.board_width):
-                x = i * self.cell_size
-                y = j * self.cell_size
-                cell = pygame.Rect(y, x, self.cell_size, self.cell_size)
-                aux.append({'cell': cell, 'color': (255, 255, 255)})
-            self.cells.append(aux)
-
-    def clickCell(self, row, column):
-        x = column
-        y = row
-        if self.board[y][x] != 0:
-            for i in range(len(self.cells)):
-                for j in range(len(self.cells[i])):
-                    if y == i or x == j or (y // 3 == i // 3 and x // 3 == j // 3):
-                        self.cells[i][j]['color'] = (204, 255, 204)
-                    elif self.board[i][j] == self.board[y][x]:
-                        self.cells[i][j]['color'] = (153, 255, 204)
-                    else:
-                        self.cells[i][j]['color'] = (255, 255, 255)
-        else:
-            for i in range(len(self.cells)):
-                for j in range(len(self.cells[i])):
-                    self.cells[i][j]['color'] = (255, 255, 255)
-        self.cells[y][x]['color'] = (153, 255, 235)
-
-    def update(self, row, column, value):
-        self.board[row][column] = value
+from Sudoku import Sudoku
+from Board import Board
 
 class Game:
     def __init__(self, board):
@@ -122,6 +18,38 @@ class Game:
         self.mistake = 0
         self.solvedBoard = Sudoku(board).solvedSudoku()
         self.font = pygame.font.Font('Arial.ttf', 25)
+        self.pixel_font = pygame.font.Font('Pixel.ttf', 25)
+
+        self.state = "menu"
+        self.menu_img = pygame.image.load('menu_img.jpg')
+        self.menu_img = pygame.transform.scale(self.menu_img, (self.window_width, self.window_height))
+
+        self.win_img = pygame.image.load('win.png')
+        self.win_img = pygame.transform.scale(self.win_img, (self.window_width, self.window_height))
+
+        self.lose_img = pygame.image.load('sad.png')
+        self.lose_img = pygame.transform.scale(self.lose_img, (self.window_width, self.window_height))
+
+    def handle_events_win(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+    def handle_events_stop(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+    def handle_events_menu(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if self.text_rect_play.collidepoint(x, y):
+                    self.state = "playing"
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -134,9 +62,6 @@ class Game:
                 self.click_column = x // self.board.cell_size  # width c column
                 self.click_row = y // self.board.cell_size  # height l row
                 self.board.clickCell(self.click_row, self.click_column)
-                print(self.click_row)
-                print(self.click_column)
-                print(self.board.board[self.click_row][self.click_column])
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:
@@ -175,15 +100,17 @@ class Game:
                     self.key = 8
                 if event.key == pygame.K_KP9:
                     self.key = 9
-                if self.solvedBoard[self.click_row][self.click_column] == self.key:
-                    if self.board.board[self.click_row][self.click_column] == 0:
-                        self.board.update(self.click_row, self.click_column, self.key)
-                else:
-                    if self.mistake == 2:
-                        pygame.quit()
-                        sys.exit()
-                    if self.board.board[self.click_row][self.click_column] == 0:
-                        self.mistake += 1
+                if self.click_row is not None:
+                    if self.solvedBoard[self.click_row][self.click_column] == self.key:
+                        if self.board.board[self.click_row][self.click_column] == 0:
+                            self.board.update(self.click_row, self.click_column, self.key)
+                    else:
+                        if self.mistake == 2:
+                            self.state = "stop"
+                            #pygame.quit()
+                            #sys.exit()
+                        if self.board.board[self.click_row][self.click_column] == 0:
+                            self.mistake += 1
 
     def draw_board(self):
         for i in range(self.board.board_height):
@@ -217,11 +144,105 @@ class Game:
 
         pygame.display.flip()
 
+    def draw_stop(self):
+        self.screen.blit(self.lose_img, (0, 0))
+        text_surface_lose = self.pixel_font.render("You lose!", True, (0, 0, 0))
+        text_rect_lose = text_surface_lose.get_rect(center=(self.window_width // 2, self.window_height // 8))
+        self.screen.blit(text_surface_lose, text_rect_lose)
+
+        pygame.display.flip()
+
+    def draw_win(self):
+        self.screen.blit(self.win_img, (0, 0))
+        text_surface_win = self.pixel_font.render("Congratulations!", True, (0, 0, 0))
+        text_rect_win = text_surface_win.get_rect(center=(self.window_width // 2, self.window_height // 8))
+        self.screen.blit(text_surface_win, text_rect_win)
+        text_surface_win = self.pixel_font.render("You've finished the game!", True, (0, 0, 0))
+        text_rect_win = text_surface_win.get_rect(center=(self.window_width // 2, self.window_height // 8 + 25))
+        self.screen.blit(text_surface_win, text_rect_win)
+
+        pygame.display.flip()
+
+    def draw_menu(self):
+        self.screen.blit(self.menu_img, (0, 0))
+        text_surface_welcome = self.pixel_font.render("Welcome to Sudoku", True, (0, 0, 0))
+        text_rect_welcome = text_surface_welcome.get_rect(center=(self.window_width // 2, self.window_height // 8))
+        self.screen.blit(text_surface_welcome, text_rect_welcome)
+
+        text_surface_play = self.pixel_font.render("PLAY", True, (0, 0, 0))
+        self.text_rect_play = text_surface_play.get_rect(center=(self.window_width // 2, self.window_height - self.window_height // 8))
+        self.screen.blit(text_surface_play, self.text_rect_play)
+
+        pygame.display.flip()
+
+    def solveSudoku_steps(self, row, column):
+        if column == 9:
+            if row == 8:
+                return True
+            row += 1
+            column = 0
+        if self.board.board[row][column] > 0:
+            return self.solveSudoku_steps(row, column + 1)
+        pygame.draw.rect(self.screen, self.board.cells[row][column]['color'], self.board.cells[row][column]['cell'])
+        pygame.draw.rect(self.screen, (0, 0, 0), self.board.cells[row][column]['cell'], 2)
+        pygame.draw.rect(self.screen, (255, 0, 0), self.board.cells[row][column]['cell'], 2)
+        self.draw_boundary_lines()
+
+        for value in range(1, 10):
+            if Sudoku(self.board.board).isValidSudoku(row, column, value):
+                self.board.board[row][column] = value
+
+                pygame.draw.rect(self.screen, self.board.cells[row][column]['color'], self.board.cells[row][column]['cell'])
+                text_surface = self.font.render(str(value), True, (0, 0, 0))
+                text_rect = text_surface.get_rect(center=(column * self.board.cell_size + self.board.cell_size // 2, row * self.board.cell_size + self.board.cell_size // 2))
+                self.screen.blit(text_surface, text_rect)
+
+                if value == self.solvedBoard[row][column]:
+                    pygame.draw.rect(self.screen, (0, 0, 0), self.board.cells[row][column]['cell'], 2)
+                    pygame.draw.rect(self.screen, (0, 255, 0), self.board.cells[row][column]['cell'], 2)
+                else:
+                    pygame.draw.rect(self.screen, (0, 0, 0), self.board.cells[row][column]['cell'], 2)
+                    pygame.draw.rect(self.screen, (255, 0, 0), self.board.cells[row][column]['cell'], 2)
+
+                pygame.display.flip()
+                self.clock.tick(10)
+                if self.solveSudoku_steps(row, column + 1):
+                    pygame.draw.rect(self.screen, (255, 255, 255), self.board.cells[row][column]['cell'], 2)
+                    pygame.draw.rect(self.screen, (0, 0, 0), self.board.cells[row][column]['cell'], 1)
+                    self.draw_boundary_lines()
+                    return True
+                self.board.board[row][column] = 0
+        return False
+
+    def draw_solution(self):
+        self.screen.fill((255, 255, 255))
+        self.draw_board()
+        self.draw_boundary_lines()
+        self.solveSudoku_steps(0,0)
+
+        pygame.display.flip()
+
     def run(self):
         while True:
-            self.handle_events()
-            pygame.display.update()
-            self.draw()
+            if self.state == "menu":
+                self.handle_events_menu()
+                pygame.display.update()
+                self.draw_menu()
+            if self.state == "playing":
+                self.handle_events()
+                pygame.display.update()
+                self.draw_solution()
+                #self.draw()
+            if self.state == "stop":
+                self.handle_events_stop()
+                pygame.display.update()
+                self.draw_stop()
+            if self.state == "win":
+                self.handle_events_win()
+                pygame.display.update()
+                self.draw_win()
+            if not self.board.exists_empty_cell():
+                self.state = "win"
             self.clock.tick(60)
 
 
@@ -236,76 +257,3 @@ grid = [[3, 0, 6, 5, 0, 8, 4, 0, 0],
         [0, 0, 5, 2, 0, 6, 3, 0, 0]]
 
 Game(grid).run()
-
-'''
-sudoku = Sudoku(grid)
-solved = sudoku.solvedSudoku()
-for i in solved:
-    print(i)
-print()
-for i in grid:
-    print(i)
-'''
-
-'''
-def isValidSudoku(board, givenRow, givenColumn, number):
-    aux = board[givenRow][givenColumn]
-    board[givenRow][givenColumn] = number
-    for row in range(9):
-        for column in range(9):
-            if board[row][column] != 0:
-                # check if the element is unique on the column
-                for r in range(row+1, 9):
-                    if board[row][column] == board[r][column]:
-                        board[givenRow][givenColumn] = aux
-                        return False
-                # check if the element is unique on the row
-                for c in range(column+1, 9):
-                    if board[row][column] == board[row][c]:
-                        board[givenRow][givenColumn] = aux
-                        return False
-                # check if the element is unique in its 3*3 square
-                # check secondary diagonal
-                if board[row][column] == board[(row+1) % 3 + 3*(row//3)][(column+1) % 3 + 3*(column//3)]:
-                    board[givenRow][givenColumn] = aux
-                    return False
-                if board[row][column] == board[(row+2) % 3 + 3*(row//3)][(column+2) % 3 + 3*(column//3)]:
-                    board[givenRow][givenColumn] = aux
-                    return False
-
-                # main diagonal
-                if board[row][column] == board[(row+2) % 3 + 3*(row//3)][(column+1) % 3 + 3*(column//3)]:
-                    board[givenRow][givenColumn] = aux
-                    return False
-                if board[row][column] == board[(row+1) % 3 + 3*(row//3)][(column+2) % 3 + 3*(column//3)]:
-                    board[givenRow][givenColumn] = aux
-                    return False
-    board[givenRow][givenColumn] = aux
-    return True
-
-def solveSudoku(board, row, column):
-    # if the value of the column is 9 we should go to the next row and first column
-    if column == 9:
-        if row == 8: # if we are at the last row and complete it all it means we finished the game
-            return True
-        row += 1
-        column = 0
-
-    # if the cell is not empty move to the next cell
-    if board[row][column] > 0:
-        return solveSudoku(board, row, column+1)
-
-    for value in range(1, 10):
-        if isValidSudoku(board,row,column,value):
-            board[row][column] = value
-            # check for next cell
-            if solveSudoku(board, row, column+1):
-                return True
-            # if it reaches here it means that the value was wrong, back to empty cell
-            board[row][column] = 0
-    return False
-'''
-
-#print(solveSudoku(grid,0,0))
-#for row in grid:
-#   print(row)

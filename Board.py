@@ -1,3 +1,5 @@
+import copy
+
 import pygame
 
 class Board:
@@ -5,7 +7,7 @@ class Board:
         self.board_width = 9
         self.board_height = 9
         self.cell_size = 50
-        self.board = board
+        self.board = copy.deepcopy(board)
 
         self.cells = []
         for i in range(self.board_height):

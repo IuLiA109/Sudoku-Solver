@@ -1,3 +1,4 @@
+import copy
 import sys
 import pygame
 from Sudoku import Sudoku
@@ -7,7 +8,9 @@ class Game:
     def __init__(self, board):
         pygame.init()
         pygame.display.set_caption('SUDOKU')
+        self.original_board = copy.deepcopy(board)
         self.board = Board(board)
+
         self.window_width = self.board.board_width * self.board.cell_size
         self.window_height = self.board.board_height * self.board.cell_size + 60
         self.screen = pygame.display.set_mode((self.window_width, self.window_height))
@@ -17,29 +20,45 @@ class Game:
         self.click_row = None
         self.mistake = 0
         self.solvedBoard = Sudoku(board).solvedSudoku()
-        self.font = pygame.font.Font('Arial.ttf', 25)
-        self.pixel_font = pygame.font.Font('Pixel.ttf', 25)
+        self.font = pygame.font.Font('assets/fonts/Arial.ttf', 25)
+        self.pixel_font = pygame.font.Font('assets/fonts/Pixel.ttf', 25)
 
         self.state = "menu"
-        self.menu_img = pygame.image.load('menu_img.jpg')
+        self.menu_img = pygame.image.load('assets/images/menu_img.jpg')
         self.menu_img = pygame.transform.scale(self.menu_img, (self.window_width, self.window_height))
 
-        self.win_img = pygame.image.load('win.png')
+        self.win_img = pygame.image.load('assets/images/win.png')
         self.win_img = pygame.transform.scale(self.win_img, (self.window_width, self.window_height))
 
-        self.lose_img = pygame.image.load('sad.png')
+        self.lose_img = pygame.image.load('assets/images/sad.png')
         self.lose_img = pygame.transform.scale(self.lose_img, (self.window_width, self.window_height))
+
+    def start_game(self):
+        self.key = None
+        self.click_column = None
+        self.click_row = None
+        self.mistake = 0
+        self.board = Board(self.original_board)
+
 
     def handle_events_win(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if self.text_rect_back.collidepoint(x, y):
+                    self.state = "menu"
     def handle_events_stop(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if self.text_rect_back.collidepoint(x, y):
+                    self.state = "menu"
 
     def handle_events_menu(self):
         for event in pygame.event.get():
@@ -64,6 +83,7 @@ class Game:
                 self.board.clickCell(self.click_row, self.click_column)
 
             if event.type == pygame.KEYDOWN:
+                self.key = None
                 if event.key == pygame.K_1:
                     self.key = 1
                 if event.key == pygame.K_2:
@@ -100,17 +120,18 @@ class Game:
                     self.key = 8
                 if event.key == pygame.K_KP9:
                     self.key = 9
-                if self.click_row is not None:
-                    if self.solvedBoard[self.click_row][self.click_column] == self.key:
-                        if self.board.board[self.click_row][self.click_column] == 0:
-                            self.board.update(self.click_row, self.click_column, self.key)
-                    else:
-                        if self.mistake == 2:
-                            self.state = "stop"
-                            #pygame.quit()
-                            #sys.exit()
-                        if self.board.board[self.click_row][self.click_column] == 0:
-                            self.mistake += 1
+                if self.key is not None:
+                    if self.click_row is not None:
+                        if self.solvedBoard[self.click_row][self.click_column] == self.key:
+                            if self.board.board[self.click_row][self.click_column] == 0:
+                                self.board.update(self.click_row, self.click_column, self.key)
+                        else:
+                            if self.mistake == 2:
+                                self.state = "stop"
+                                #pygame.quit()
+                                #sys.exit()
+                            if self.board.board[self.click_row][self.click_column] == 0:
+                                self.mistake += 1
 
     def draw_board(self):
         for i in range(self.board.board_height):
@@ -150,6 +171,10 @@ class Game:
         text_rect_lose = text_surface_lose.get_rect(center=(self.window_width // 2, self.window_height // 8))
         self.screen.blit(text_surface_lose, text_rect_lose)
 
+        text_surface_back = self.pixel_font.render("BACK TO MENU", True, (0, 0, 0))
+        self.text_rect_back = text_surface_back.get_rect(center=(self.window_width // 2, self.window_height - self.window_height // 9))
+        self.screen.blit(text_surface_back, self.text_rect_back)
+
         pygame.display.flip()
 
     def draw_win(self):
@@ -157,9 +182,14 @@ class Game:
         text_surface_win = self.pixel_font.render("Congratulations!", True, (0, 0, 0))
         text_rect_win = text_surface_win.get_rect(center=(self.window_width // 2, self.window_height // 8))
         self.screen.blit(text_surface_win, text_rect_win)
+
         text_surface_win = self.pixel_font.render("You've finished the game!", True, (0, 0, 0))
         text_rect_win = text_surface_win.get_rect(center=(self.window_width // 2, self.window_height // 8 + 25))
         self.screen.blit(text_surface_win, text_rect_win)
+
+        text_surface_back = self.pixel_font.render("BACK TO MENU", True, (0, 0, 0))
+        self.text_rect_back = text_surface_back.get_rect(center=(self.window_width // 2, self.window_height - self.window_height // 9))
+        self.screen.blit(text_surface_back, self.text_rect_back)
 
         pygame.display.flip()
 
@@ -205,7 +235,7 @@ class Game:
                     pygame.draw.rect(self.screen, (255, 0, 0), self.board.cells[row][column]['cell'], 2)
 
                 pygame.display.flip()
-                self.clock.tick(10)
+                self.clock.tick(100)
                 if self.solveSudoku_steps(row, column + 1):
                     pygame.draw.rect(self.screen, (255, 255, 255), self.board.cells[row][column]['cell'], 2)
                     pygame.draw.rect(self.screen, (0, 0, 0), self.board.cells[row][column]['cell'], 1)
@@ -219,12 +249,14 @@ class Game:
         self.draw_board()
         self.draw_boundary_lines()
         self.solveSudoku_steps(0,0)
+        self.state = "win"
 
         pygame.display.flip()
 
     def run(self):
         while True:
             if self.state == "menu":
+                self.start_game()
                 self.handle_events_menu()
                 pygame.display.update()
                 self.draw_menu()
@@ -241,7 +273,8 @@ class Game:
                 self.handle_events_win()
                 pygame.display.update()
                 self.draw_win()
-            if not self.board.exists_empty_cell():
+                # print("ok")
+            if not self.board.exists_empty_cell() and self.state == "playing":
                 self.state = "win"
             self.clock.tick(60)
 

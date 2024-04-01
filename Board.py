@@ -1,5 +1,5 @@
 import copy
-
+import random
 import pygame
 
 class Board:
@@ -8,6 +8,7 @@ class Board:
         self.board_height = 9
         self.cell_size = 50
         self.board = copy.deepcopy(board)
+        self.emptyCells = [[r, c] for r in range(self.board_height) for c in range(self.board_width) if self.board[r][c] == 0]
 
         self.cells = []
         for i in range(self.board_height):
@@ -37,12 +38,26 @@ class Board:
                     self.cells[i][j]['color'] = (255, 255, 255)
         self.cells[y][x]['color'] = (153, 255, 235)
 
+    def unclickCells(self):
+        for i in range(len(self.cells)):
+            for j in range(len(self.cells[i])):
+                self.cells[i][j]['color'] = (255, 255, 255)
+
+    def randomCell(self):
+        random_number = random.randint(0, len(self.emptyCells) - 1)
+        return self.emptyCells[random_number][0], self.emptyCells[random_number][1]
+
     def update(self, row, column, value):
         self.board[row][column] = value
 
     def exists_empty_cell(self):
+        if len(self.emptyCells) == 0:
+            return False
+        return True
+    '''
         for i in range(self.board_height):
             for j in range(self.board_width):
                 if self.board[i][j] == 0:
                     return True
         return False
+    '''

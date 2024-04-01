@@ -23,6 +23,9 @@ class Game:
         self.font = pygame.font.Font('assets/fonts/Arial.ttf', 25)
         self.pixel_font = pygame.font.Font('assets/fonts/Pixel.ttf', 25)
 
+        hint_image = pygame.image.load("assets/images/hint.png")
+        self.hint_image = pygame.transform.scale(hint_image, (hint_image.get_width(), hint_image.get_height()))
+
         self.state = "menu"
         self.menu_img = pygame.image.load('assets/images/menu_img.jpg')
         self.menu_img = pygame.transform.scale(self.menu_img, (self.window_width, self.window_height))
@@ -70,6 +73,22 @@ class Game:
                 if self.text_rect_play.collidepoint(x, y):
                     self.state = "playing"
 
+    def handle_events_solve(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if y <= self.board.board_height * self.board.cell_size :
+                    self.click_column = x // self.board.cell_size  # width c column
+                    self.click_row = y // self.board.cell_size  # height l row
+                    self.board.clickCell(self.click_row, self.click_column)
+
+                if self.text_rect_exit.collidepoint(x, y):
+                    self.state = "win"
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -78,9 +97,21 @@ class Game:
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = pygame.mouse.get_pos()
-                self.click_column = x // self.board.cell_size  # width c column
-                self.click_row = y // self.board.cell_size  # height l row
-                self.board.clickCell(self.click_row, self.click_column)
+                if y <= self.board.board_height * self.board.cell_size :
+                    self.click_column = x // self.board.cell_size  # width c column
+                    self.click_row = y // self.board.cell_size  # height l row
+                    self.board.clickCell(self.click_row, self.click_column)
+                else:
+                    self.board.unclickCells()
+
+                if self.text_rect_hint.collidepoint(x, y):
+                    r, c = self.board.randomCell()
+                    self.board.update(r, c, self.solvedBoard[r][c])
+                    self.board.emptyCells.remove([r, c])
+
+
+                if self.text_rect_solve.collidepoint(x, y):
+                    self.state = "solve"
 
             if event.type == pygame.KEYDOWN:
                 self.key = None
@@ -125,6 +156,7 @@ class Game:
                         if self.solvedBoard[self.click_row][self.click_column] == self.key:
                             if self.board.board[self.click_row][self.click_column] == 0:
                                 self.board.update(self.click_row, self.click_column, self.key)
+                                self.board.emptyCells.remove([self.click_row, self.click_column])
                         else:
                             if self.mistake == 2:
                                 self.state = "stop"
@@ -154,7 +186,7 @@ class Game:
 
     def draw_mistakes(self):
         text_surface = self.font.render("Mistakes: " + str(self.mistake) + "/3", True, (255, 0, 0))
-        text_rect = text_surface.get_rect(topleft = (10, self.window_height - 50))
+        text_rect = text_surface.get_rect(center=(80, self.board.board_height * self.board.cell_size + (self.window_height - self.board.board_height * self.board.cell_size) // 2))
         self.screen.blit(text_surface, text_rect)
 
     def draw(self):
@@ -162,6 +194,16 @@ class Game:
         self.draw_board()
         self.draw_boundary_lines()
         self.draw_mistakes()
+
+        text_surface_hint = self.font.render("hint", True, (0, 0, 0))
+        self.text_rect_hint = text_surface_hint.get_rect(center=(self.window_width - self.window_width // 3,
+                                                                   self.board.board_height * self.board.cell_size + (
+                                                                               self.window_height - self.board.board_height * self.board.cell_size) // 2))
+        self.screen.blit(self.hint_image, self.text_rect_hint)
+
+        text_surface_solve = self.font.render("solve", True, (0, 0, 0))
+        self.text_rect_solve = text_surface_solve.get_rect(center=(self.window_width - self.window_width // 6, self.board.board_height * self.board.cell_size + (self.window_height - self.board.board_height * self.board.cell_size) // 2))
+        self.screen.blit(text_surface_solve, self.text_rect_solve)
 
         pygame.display.flip()
 
@@ -248,8 +290,11 @@ class Game:
         self.screen.fill((255, 255, 255))
         self.draw_board()
         self.draw_boundary_lines()
-        self.solveSudoku_steps(0,0)
-        self.state = "win"
+        self.solveSudoku_steps(0, 0)
+
+        text_surface_exit = self.pixel_font.render("exit", True, (0, 0, 0))
+        self.text_rect_exit = text_surface_exit.get_rect(center=(self.window_width // 2, self.board.board_height * self.board.cell_size + (self.window_height - self.board.board_height * self.board.cell_size) // 2))
+        self.screen.blit(text_surface_exit, self.text_rect_exit)
 
         pygame.display.flip()
 
@@ -260,11 +305,14 @@ class Game:
                 self.handle_events_menu()
                 pygame.display.update()
                 self.draw_menu()
+            if self.state == "solve":
+                self.handle_events_solve()
+                pygame.display.update()
+                self.draw_solution()
             if self.state == "playing":
                 self.handle_events()
                 pygame.display.update()
-                self.draw_solution()
-                #self.draw()
+                self.draw()
             if self.state == "stop":
                 self.handle_events_stop()
                 pygame.display.update()

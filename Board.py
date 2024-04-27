@@ -6,16 +6,17 @@ class Board:
     def __init__(self, board):
         self.board_width = 9
         self.board_height = 9
-        self.cell_size = 50
+        self.cell_size = 70
         self.board = copy.deepcopy(board)
         self.emptyCells = [[r, c] for r in range(self.board_height) for c in range(self.board_width) if self.board[r][c] == 0]
+        self.notes = [[set() for _ in range(self.board_width)] for _ in range(self.board_height)]
 
         self.cells = []
         for i in range(self.board_height):
             aux = []
             for j in range(self.board_width):
-                x = i * self.cell_size
-                y = j * self.cell_size
+                x = i * self.cell_size + self.cell_size #???????????
+                y = j * self.cell_size + self.cell_size
                 cell = pygame.Rect(y, x, self.cell_size, self.cell_size)
                 aux.append({'cell': cell, 'color': (255, 255, 255)})
             self.cells.append(aux)

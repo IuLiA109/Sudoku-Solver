@@ -3,6 +3,7 @@ import copy
 class Sudoku:
     def __init__(self, board):
         self.board = copy.deepcopy(board)
+
     def isValidSudoku(self, givenRow, givenColumn, number):
         aux = self.board[givenRow][givenColumn]
         self.board[givenRow][givenColumn] = number

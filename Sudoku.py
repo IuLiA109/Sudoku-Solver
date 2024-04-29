@@ -68,3 +68,9 @@ class Sudoku:
     def solvedSudoku(self):
         self.solveSudoku(0,0)
         return self.board
+
+    def calculate_score(self, time_elapsed, num_errors, score):
+        error_penalty = num_errors
+        time_penalty = time_elapsed
+        final_score = score + max(1, 100 - error_penalty - time_penalty)
+        return int(final_score)
